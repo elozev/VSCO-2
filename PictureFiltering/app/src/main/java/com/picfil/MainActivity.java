@@ -27,11 +27,14 @@ import java.io.FileNotFoundException;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final int CAMERA_RESPONSE_CODE = 4783;
     private static final int PERMISSION_CAMERA_CODE = 3717;
+    private static final int FILE_PICK_CODE = 2315;
+    private static final int PERMISSION_STORAGE_CODE = 4215;
 
 
     @BindView(R.id.imageView)
@@ -46,16 +49,10 @@ public class MainActivity extends AppCompatActivity {
 
         ButterKnife.bind(this);
 
-
-//        imageView.setImageDrawable(getResources().getDrawable(R.drawable.ic_camera_alt_white_24dp));
-
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-
                 startCamera();
             }
         });
@@ -91,6 +88,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    @OnClick(R.id.importFromIntent)
+    public void importClick(){
+        Toast.makeText(this, "Click", Toast.LENGTH_SHORT).show();
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            filePicker();
+        } else {
+            requestPermission();
+        }
+    }
+
     private boolean grantedPermission() {
         int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
         Toast.makeText(this, "code: " + permissionCheck, Toast.LENGTH_SHORT).show();
@@ -111,6 +118,12 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
                 }
                 break;
+
+            case FILE_PICK_CODE:
+                if(resultCode == RESULT_OK){
+                    imageView.setImageURI(data.getData());
+                }
+                break;
         }
     }
 
@@ -122,11 +135,28 @@ public class MainActivity extends AppCompatActivity {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(this, "Okey :( no camera for you", Toast.LENGTH_SHORT).show();
+//                    Toast.makeText(this, "Okey :( no camera for you", Toast.LENGTH_SHORT).show();
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{Manifest.permission.CAMERA},
+                            PERMISSION_CAMERA_CODE);
                 }
-
+                break;
+            case PERMISSION_STORAGE_CODE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show();
+                } else {
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                            PERMISSION_STORAGE_CODE);
+                }
                 break;
         }
+    }
+
+    private void requestPermission() {
+        ActivityCompat.requestPermissions(MainActivity.this,
+                new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                PERMISSION_STORAGE_CODE);
     }
 
     @Override
@@ -149,5 +179,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+
+    private void filePicker() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        startActivityForResult(intent, FILE_PICK_CODE);
     }
 }
