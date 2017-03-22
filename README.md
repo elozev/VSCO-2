@@ -1,2 +1,2 @@
 # VSCO-2
-Project for Compter Graphics and Design
+Project for Compter Graphics and Multimedia
