@@ -14,4 +14,12 @@
     tools:context="com.picfil.MainActivity"
     tools:showIn="@layout/activity_main">
 
+    <ImageView
+        android:id="@+id/imageView"
+        android:padding="5dp"
+        android:layout_width="match_parent"
+        android:layout_height="900px"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        app:srcCompat="@mipmap/ic_launcher"/>
 </RelativeLayout>

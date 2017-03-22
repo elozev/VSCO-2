@@ -3,6 +3,8 @@ package com.picfil;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -13,15 +15,27 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.afollestad.materialcamera.MaterialCamera;
 import com.afollestad.materialdialogs.MaterialDialog;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final int CAMERA_RESPONSE_CODE = 4783;
     private static final int PERMISSION_CAMERA_CODE = 3717;
+
+
+    @BindView(R.id.imageView)
+    ImageView imageView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,8 +44,10 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        ButterKnife.bind(this);
 
 
+//        imageView.setImageDrawable(getResources().getDrawable(R.drawable.ic_camera_alt_white_24dp));
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -87,9 +103,9 @@ public class MainActivity extends AppCompatActivity {
 
         switch (requestCode) {
             case CAMERA_RESPONSE_CODE:
-                if (resultCode == RESULT_OK)
-                    Toast.makeText(this, "Saved to: " + data.getDataString(), Toast.LENGTH_LONG).show();
-                else if (data != null) {
+                if (resultCode == RESULT_OK) {
+                    imageView.setImageURI(data.getData());
+                } else if (data != null) {
                     Exception e = (Exception) data.getSerializableExtra(MaterialCamera.ERROR_EXTRA);
                     e.printStackTrace();
                     Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
