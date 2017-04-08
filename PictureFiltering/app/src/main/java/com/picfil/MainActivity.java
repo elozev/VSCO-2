@@ -29,13 +29,15 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
+import android.media.effect.*;
+
+
 public class MainActivity extends AppCompatActivity {
 
     private static final int CAMERA_RESPONSE_CODE = 4783;
     private static final int PERMISSION_CAMERA_CODE = 3717;
     private static final int FILE_PICK_CODE = 2315;
     private static final int PERMISSION_STORAGE_CODE = 4215;
-
 
     @BindView(R.id.imageView)
     ImageView imageView;
@@ -46,7 +48,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
         ButterKnife.bind(this);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
