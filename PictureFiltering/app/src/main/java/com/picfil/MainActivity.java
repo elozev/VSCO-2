@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -12,6 +13,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -48,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_CAMERA_CODE = 3717;
     private static final int FILE_PICK_CODE = 2315;
     private static final int PERMISSION_STORAGE_CODE = 4215;
+    private static final String TAG = MainActivity.class.getSimpleName();
 
     @BindView(R.id.imageView)
     ImageView imageView;
@@ -85,29 +88,9 @@ public class MainActivity extends AppCompatActivity {
                 TextView textView = (TextView) view;
                 Toast.makeText(MainActivity.this, textView.getText().toString(), Toast.LENGTH_SHORT).show();
 
-                switch (textView.getText().toString()){
-                    case "Blur":
-                        blurIt(bitmap);
-                        break;
-                    case "Closing":
-                        closingIt(bitmap);
-                        break;
-                    case "Desaturation":
-                        desaturatedIt(bitmap);
-                        break;
-                    case "Dilatation":
-                        dilateIt(bitmap);
-                        break;
-                    case "Erosion":
-                        erodeIt(bitmap);
-                        break;
-                    case "Grayscale":
-                        grayScaleIt(bitmap);
-                        break;
-                    case "Sharpen":
-                        sharpenIt(bitmap);
-                        break;
-                }
+                FilterTheImage task = new FilterTheImage();
+                task.execute(textView.getText().toString());
+
             }
 
 
@@ -151,7 +134,13 @@ public class MainActivity extends AppCompatActivity {
         Sharpen sharpen = new Sharpen();
         sharpen.applyInPlace(image);
         bitmap = image.toBitmap();
-        imageView.setImageBitmap(bitmap);
+        final Bitmap finalBitmap = bitmap;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                imageView.setImageBitmap(finalBitmap);
+            }
+        });
     }
 
     private void grayScaleIt(Bitmap bitmap) {
@@ -159,7 +148,13 @@ public class MainActivity extends AppCompatActivity {
         Grayscale grayscale= new Grayscale();
         grayscale.applyInPlace(image);
         bitmap = image.toBitmap();
-        imageView.setImageBitmap(bitmap);
+        final Bitmap finalBitmap = bitmap;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                imageView.setImageBitmap(finalBitmap);
+            }
+        });
     }
 
     private void erodeIt(Bitmap bitmap) {
@@ -167,7 +162,13 @@ public class MainActivity extends AppCompatActivity {
         Erosion erosion = new Erosion();
         erosion.applyInPlace(image);
         bitmap = image.toBitmap();
-        imageView.setImageBitmap(bitmap);
+        final Bitmap finalBitmap = bitmap;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                imageView.setImageBitmap(finalBitmap);
+            }
+        });
     }
 
     private void dilateIt(Bitmap bitmap) {
@@ -175,7 +176,13 @@ public class MainActivity extends AppCompatActivity {
         Dilatation dilatation = new Dilatation();
         dilatation.applyInPlace(image);
         bitmap = image.toBitmap();
-        imageView.setImageBitmap(bitmap);
+        final Bitmap finalBitmap = bitmap;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                imageView.setImageBitmap(finalBitmap);
+            }
+        });
     }
 
     private void desaturatedIt(Bitmap bitmap) {
@@ -183,7 +190,13 @@ public class MainActivity extends AppCompatActivity {
         Desaturation desaturation = new Desaturation();
         desaturation.applyInPlace(image);
         bitmap = image.toBitmap();
-        imageView.setImageBitmap(bitmap);
+        final Bitmap finalBitmap = bitmap;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                imageView.setImageBitmap(finalBitmap);
+            }
+        });
     }
 
     private void closingIt(Bitmap bitmap) {
@@ -191,7 +204,13 @@ public class MainActivity extends AppCompatActivity {
         Closing closing = new Closing();
         closing.applyInPlace(image);
         bitmap = image.toBitmap();
-        imageView.setImageBitmap(bitmap);
+        final Bitmap finalBitmap = bitmap;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                imageView.setImageBitmap(finalBitmap);
+            }
+        });
     }
 
     private void blurIt(Bitmap bitmap) {
@@ -199,8 +218,14 @@ public class MainActivity extends AppCompatActivity {
         Blur blur  = new Blur();
         blur.applyInPlace(image);
         bitmap = image.toBitmap();
-        imageView.setImageBitmap(bitmap);
-        bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
+        final Bitmap finalBitmap = bitmap;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                imageView.setImageBitmap(finalBitmap);
+            }
+        });
+//        bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
     }
 
 
@@ -319,4 +344,62 @@ public class MainActivity extends AppCompatActivity {
         intent.setType("image/*");
         startActivityForResult(intent, FILE_PICK_CODE);
     }
+
+    private class FilterTheImage extends AsyncTask<String, Void, Void>{
+
+        private MaterialDialog dialog;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            dialog = new MaterialDialog.Builder(MainActivity.this)
+                    .title("Filtering image!")
+                    .content("Please wait ...")
+
+                    .progress(true, 0)
+                    .show();
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            dialog.dismiss();
+        }
+
+        @Override
+        protected Void doInBackground(String... params) {
+
+            for(String str: params){
+                Log.d(TAG, "Async param: " + str);
+            }
+
+
+            switch (params[0]){
+                case "Blur":
+                    blurIt(bitmap);
+                    break;
+                case "Closing":
+                    closingIt(bitmap);
+                    break;
+                case "Desaturation":
+                    desaturatedIt(bitmap);
+                    break;
+                case "Dilatation":
+                    dilateIt(bitmap);
+                    break;
+                case "Erosion":
+                    erodeIt(bitmap);
+                    break;
+                case "Grayscale":
+                    grayScaleIt(bitmap);
+                    break;
+                case "Sharpen":
+                    sharpenIt(bitmap);
+                    break;
+            }
+
+            return null;
+        }
+    }
+
 }
