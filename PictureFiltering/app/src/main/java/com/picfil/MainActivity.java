@@ -156,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
+        this.bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
 
     }
 
