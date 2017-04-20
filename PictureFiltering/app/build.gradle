@@ -36,5 +36,5 @@ dependencies {
     compile 'com.android.support:design:25.1.0'
     compile 'com.afollestad:material-camera:0.4.4'
     testCompile 'junit:junit:4.12'
-    compile files('C:/Users/Ignat/Desktop/VSCO-2/PictureFiltering/libs/Catalano.Android.Image.jar')
+    compile files('../libs/Catalano.Android.Image.jar')
 }

@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -16,23 +15,25 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.materialcamera.MaterialCamera;
 import com.afollestad.materialdialogs.MaterialDialog;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
 import Catalano.Imaging.Concurrent.Filters.Blur;
-import Catalano.Imaging.Concurrent.Filters.Emboss;
+import Catalano.Imaging.Concurrent.Filters.Closing;
+import Catalano.Imaging.Concurrent.Filters.Desaturation;
+import Catalano.Imaging.Concurrent.Filters.Dilatation;
+import Catalano.Imaging.Concurrent.Filters.Erosion;
 import Catalano.Imaging.Concurrent.Filters.Grayscale;
+import Catalano.Imaging.Concurrent.Filters.Sharpen;
 import Catalano.Imaging.FastBitmap;
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -59,8 +60,11 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         ButterKnife.bind(this);
+
+
         ListView effects = (ListView)findViewById(R.id.listView1);
-        ArrayList<String> effectsList = new ArrayList<String>();
+
+        ArrayList<String> effectsList = new ArrayList<>();
         effectsList.add("Blur");
         effectsList.add("Closing");
         effectsList.add("Desaturation");
@@ -74,6 +78,41 @@ public class MainActivity extends AppCompatActivity {
                 effectsList );
 
         effects.setAdapter(arrayAdapter);
+
+        effects.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                TextView textView = (TextView) view;
+                Toast.makeText(MainActivity.this, textView.getText().toString(), Toast.LENGTH_SHORT).show();
+
+                switch (textView.getText().toString()){
+                    case "Blur":
+                        blurIt(bitmap);
+                        break;
+                    case "Closing":
+                        closingIt(bitmap);
+                        break;
+                    case "Desaturation":
+                        desaturatedIt(bitmap);
+                        break;
+                    case "Dilatation":
+                        dilateIt(bitmap);
+                        break;
+                    case "Erosion":
+                        erodeIt(bitmap);
+                        break;
+                    case "Grayscale":
+                        grayScaleIt(bitmap);
+                        break;
+                    case "Sharpen":
+                        sharpenIt(bitmap);
+                        break;
+                }
+            }
+
+
+
+        });
 
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -99,7 +138,6 @@ public class MainActivity extends AppCompatActivity {
                         .positiveText("OK")
                         .show();
             } else {
-                Toast.makeText(this, "in here 2", Toast.LENGTH_SHORT).show();
 
                 ActivityCompat.requestPermissions(MainActivity.this,
                         new String[]{Manifest.permission.CAMERA},
@@ -108,14 +146,64 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void BlurIt(Bitmap bitmap) {
+    private void sharpenIt(Bitmap bitmap) {
         FastBitmap image = new FastBitmap(bitmap);
-        Grayscale blur  = new Grayscale();
+        Sharpen sharpen = new Sharpen();
+        sharpen.applyInPlace(image);
+        bitmap = image.toBitmap();
+        imageView.setImageBitmap(bitmap);
+    }
+
+    private void grayScaleIt(Bitmap bitmap) {
+        FastBitmap image = new FastBitmap(bitmap);
+        Grayscale grayscale= new Grayscale();
+        grayscale.applyInPlace(image);
+        bitmap = image.toBitmap();
+        imageView.setImageBitmap(bitmap);
+    }
+
+    private void erodeIt(Bitmap bitmap) {
+        FastBitmap image = new FastBitmap(bitmap);
+        Erosion erosion = new Erosion();
+        erosion.applyInPlace(image);
+        bitmap = image.toBitmap();
+        imageView.setImageBitmap(bitmap);
+    }
+
+    private void dilateIt(Bitmap bitmap) {
+        FastBitmap image = new FastBitmap(bitmap);
+        Dilatation dilatation = new Dilatation();
+        dilatation.applyInPlace(image);
+        bitmap = image.toBitmap();
+        imageView.setImageBitmap(bitmap);
+    }
+
+    private void desaturatedIt(Bitmap bitmap) {
+        FastBitmap image = new FastBitmap(bitmap);
+        Desaturation desaturation = new Desaturation();
+        desaturation.applyInPlace(image);
+        bitmap = image.toBitmap();
+        imageView.setImageBitmap(bitmap);
+    }
+
+    private void closingIt(Bitmap bitmap) {
+        FastBitmap image = new FastBitmap(bitmap);
+        Closing closing = new Closing();
+        closing.applyInPlace(image);
+        bitmap = image.toBitmap();
+        imageView.setImageBitmap(bitmap);
+    }
+
+    private void blurIt(Bitmap bitmap) {
+        FastBitmap image = new FastBitmap(bitmap);
+        Blur blur  = new Blur();
         blur.applyInPlace(image);
         bitmap = image.toBitmap();
         imageView.setImageBitmap(bitmap);
         bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
     }
+
+
     private void startCamera() {
         new MaterialCamera(this)
                 .stillShot()
@@ -124,8 +212,10 @@ public class MainActivity extends AppCompatActivity {
 
     @OnClick(R.id.saveToIntern)
     public void test() {
-        BlurIt(bitmap);
+        blurIt(bitmap);
     }
+
+
     @OnClick(R.id.importFromIntent)
     public void importClick(){
         Toast.makeText(this, "Click", Toast.LENGTH_SHORT).show();
