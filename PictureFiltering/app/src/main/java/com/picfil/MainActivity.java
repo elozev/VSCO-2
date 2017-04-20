@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -15,7 +16,10 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import com.afollestad.materialcamera.MaterialCamera;
@@ -24,12 +28,17 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 
+import Catalano.Imaging.Concurrent.Filters.Blur;
+import Catalano.Imaging.Concurrent.Filters.Emboss;
+import Catalano.Imaging.Concurrent.Filters.Grayscale;
+import Catalano.Imaging.FastBitmap;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
-import android.media.effect.*;
+
 
 
 public class MainActivity extends AppCompatActivity {
@@ -41,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
 
     @BindView(R.id.imageView)
     ImageView imageView;
+    Bitmap bitmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +59,22 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         ButterKnife.bind(this);
+        ListView effects = (ListView)findViewById(R.id.listView1);
+        ArrayList<String> effectsList = new ArrayList<String>();
+        effectsList.add("Blur");
+        effectsList.add("Closing");
+        effectsList.add("Desaturation");
+        effectsList.add("Dilatation");
+        effectsList.add("Erosion");
+        effectsList.add("Grayscale");
+        effectsList.add("Sharpen");
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(
+                this,
+                android.R.layout.simple_list_item_1,
+                effectsList );
+
+        effects.setAdapter(arrayAdapter);
+
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -82,13 +108,24 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void BlurIt(Bitmap bitmap) {
+        FastBitmap image = new FastBitmap(bitmap);
+        Grayscale blur  = new Grayscale();
+        blur.applyInPlace(image);
+        bitmap = image.toBitmap();
+        imageView.setImageBitmap(bitmap);
+        bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
+    }
     private void startCamera() {
         new MaterialCamera(this)
                 .stillShot()
                 .start(CAMERA_RESPONSE_CODE);
     }
 
-
+    @OnClick(R.id.saveToIntern)
+    public void test() {
+        BlurIt(bitmap);
+    }
     @OnClick(R.id.importFromIntent)
     public void importClick(){
         Toast.makeText(this, "Click", Toast.LENGTH_SHORT).show();
@@ -98,6 +135,7 @@ public class MainActivity extends AppCompatActivity {
             requestPermission();
         }
     }
+
 
     private boolean grantedPermission() {
         int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
@@ -113,6 +151,8 @@ public class MainActivity extends AppCompatActivity {
             case CAMERA_RESPONSE_CODE:
                 if (resultCode == RESULT_OK) {
                     imageView.setImageURI(data.getData());
+                    bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
+
                 } else if (data != null) {
                     Exception e = (Exception) data.getSerializableExtra(MaterialCamera.ERROR_EXTRA);
                     e.printStackTrace();
@@ -123,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
             case FILE_PICK_CODE:
                 if(resultCode == RESULT_OK){
                     imageView.setImageURI(data.getData());
+                    bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
                 }
                 break;
         }
