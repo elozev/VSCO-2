@@ -4,9 +4,11 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
@@ -27,7 +29,14 @@ import android.widget.Toast;
 import com.afollestad.materialcamera.MaterialCamera;
 import com.afollestad.materialdialogs.MaterialDialog;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Random;
 
 import Catalano.Imaging.Concurrent.Filters.Blur;
 import Catalano.Imaging.Concurrent.Filters.Closing;
@@ -40,9 +49,6 @@ import Catalano.Imaging.FastBitmap;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-
-
-
 
 public class MainActivity extends AppCompatActivity {
 
@@ -64,8 +70,7 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         ButterKnife.bind(this);
 
-
-        ListView effects = (ListView)findViewById(R.id.listView1);
+        ListView effects = (ListView) findViewById(R.id.listView1);
 
         ArrayList<String> effectsList = new ArrayList<>();
         effectsList.add("Blur");
@@ -78,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(
                 this,
                 android.R.layout.simple_list_item_1,
-                effectsList );
+                effectsList);
 
         effects.setAdapter(arrayAdapter);
 
@@ -93,10 +98,7 @@ public class MainActivity extends AppCompatActivity {
 
             }
 
-
-
         });
-
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -106,9 +108,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
-        if (ContextCompat.checkSelfPermission(MainActivity.this,
-                Manifest.permission.CAMERA)
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
 
             if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,
@@ -123,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
             } else {
 
                 ActivityCompat.requestPermissions(MainActivity.this,
-                        new String[]{Manifest.permission.CAMERA},
+                        new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE},
                         PERMISSION_CAMERA_CODE);
             }
         }
@@ -145,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void grayScaleIt(Bitmap bitmap) {
         FastBitmap image = new FastBitmap(bitmap);
-        Grayscale grayscale= new Grayscale();
+        Grayscale grayscale = new Grayscale();
         grayscale.applyInPlace(image);
         bitmap = image.toBitmap();
         final Bitmap finalBitmap = bitmap;
@@ -155,6 +155,9 @@ public class MainActivity extends AppCompatActivity {
                 imageView.setImageBitmap(finalBitmap);
             }
         });
+
+        bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
+
     }
 
     private void erodeIt(Bitmap bitmap) {
@@ -215,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void blurIt(Bitmap bitmap) {
         FastBitmap image = new FastBitmap(bitmap);
-        Blur blur  = new Blur();
+        Blur blur = new Blur();
         blur.applyInPlace(image);
         bitmap = image.toBitmap();
         final Bitmap finalBitmap = bitmap;
@@ -225,9 +228,30 @@ public class MainActivity extends AppCompatActivity {
                 imageView.setImageBitmap(finalBitmap);
             }
         });
-//        bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
     }
 
+    private void saveBitmap(String filename) {
+        String extStorageDirectory = getFilesDir().getAbsolutePath();//Environment.getExternalStorageDirectory().toString();
+        OutputStream outStream = null;
+
+        File file = new File(filename + ".png");
+        if (file.exists()) {
+            file.delete();
+            file = new File(extStorageDirectory, filename + ".png");
+            Log.e("file exist", "" + file + ",Bitmap= " + filename);
+        }
+        try {
+            // make a new bitmap from your file
+            Bitmap bitmap = BitmapFactory.decodeFile(file.getName());
+
+            outStream = new FileOutputStream(file);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outStream);
+            outStream.flush();
+            outStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     private void startCamera() {
         new MaterialCamera(this)
@@ -236,13 +260,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @OnClick(R.id.saveToIntern)
-    public void test() {
-        blurIt(bitmap);
+    public void saveClick() {
+        OutputStream stream = null;
+        try {
+            stream = new FileOutputStream(getFilesDir().getAbsolutePath());
+            stream.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+/* Write bitmap to file using JPEG or PNG and 80% quality hint for JPEG. */
+        bitmap.compress(Bitmap.CompressFormat.PNG, 70, stream);
+
+
+        String fileName = "saved" + new Date().getTime();
+        saveBitmap(fileName);
     }
 
-
     @OnClick(R.id.importFromIntent)
-    public void importClick(){
+    public void importClick() {
         Toast.makeText(this, "Click", Toast.LENGTH_SHORT).show();
         if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             filePicker();
@@ -250,7 +287,6 @@ public class MainActivity extends AppCompatActivity {
             requestPermission();
         }
     }
-
 
     private boolean grantedPermission() {
         int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
@@ -266,7 +302,7 @@ public class MainActivity extends AppCompatActivity {
             case CAMERA_RESPONSE_CODE:
                 if (resultCode == RESULT_OK) {
                     imageView.setImageURI(data.getData());
-                    bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
+                    bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
 
                 } else if (data != null) {
                     Exception e = (Exception) data.getSerializableExtra(MaterialCamera.ERROR_EXTRA);
@@ -276,9 +312,9 @@ public class MainActivity extends AppCompatActivity {
                 break;
 
             case FILE_PICK_CODE:
-                if(resultCode == RESULT_OK){
+                if (resultCode == RESULT_OK) {
                     imageView.setImageURI(data.getData());
-                    bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
+                    bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
                 }
                 break;
         }
@@ -338,14 +374,13 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-
     private void filePicker() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
         startActivityForResult(intent, FILE_PICK_CODE);
     }
 
-    private class FilterTheImage extends AsyncTask<String, Void, Void>{
+    private class FilterTheImage extends AsyncTask<String, Void, Void> {
 
         private MaterialDialog dialog;
 
@@ -369,12 +404,11 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected Void doInBackground(String... params) {
 
-            for(String str: params){
+            for (String str : params) {
                 Log.d(TAG, "Async param: " + str);
             }
 
-
-            switch (params[0]){
+            switch (params[0]) {
                 case "Blur":
                     blurIt(bitmap);
                     break;
