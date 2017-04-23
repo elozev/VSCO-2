@@ -14,6 +14,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
@@ -241,7 +242,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 imageView.setImageBitmap(finalBitmap);
+
             }
+
         });
     }
 
@@ -263,9 +266,10 @@ public class MainActivity extends AppCompatActivity {
                     Environment.DIRECTORY_PICTURES)) + "/");
             try {
                 file.createNewFile();
+                Bitmap bitmap2;
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, bos);
+                bitmap2 = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
+                bitmap2.compress(Bitmap.CompressFormat.PNG, 100, bos);
                 byte[] bitmapdata = bos.toByteArray();
                 FileOutputStream fos = new FileOutputStream(file);
                 fos.write(bitmapdata);
@@ -285,11 +289,24 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public Uri getImageUri(Context inContext, Bitmap inImage) {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        inImage.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+        String path = MediaStore.Images.Media.insertImage(inContext.getContentResolver(), inImage, "Title", null);
+        return Uri.parse(path);
+    }
     @OnClick(R.id.saveToIntern)
     public void saving() {
         saveClick();
     }
-
+    @OnClick(R.id.imageView)
+    public void fullscreen() {
+        if(bitmap != null) {
+            Bitmap bitmap2 = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
+            startActivity(new Intent(Intent.ACTION_VIEW, getImageUri(getApplicationContext(), bitmap2)));
+        }
+        else {}
+    }
 
 
     @OnClick(R.id.importFromIntent)
