@@ -1,12 +1,17 @@
 package com.picfil;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
@@ -29,6 +34,7 @@ import android.widget.Toast;
 import com.afollestad.materialcamera.MaterialCamera;
 import com.afollestad.materialdialogs.MaterialDialog;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -57,6 +63,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int FILE_PICK_CODE = 2315;
     private static final int PERMISSION_STORAGE_CODE = 4215;
     private static final String TAG = MainActivity.class.getSimpleName();
+    private static String[] PERMISSIONS_STORAGE = {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
+    private static final int PERMISSION_REQUEST_CODE = 1;
 
     @BindView(R.id.imageView)
     ImageView imageView;
@@ -69,9 +80,12 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         ButterKnife.bind(this);
-
         ListView effects = (ListView) findViewById(R.id.listView1);
-
+        if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            Toast.makeText(MainActivity.this, "Write External Storage permission allows us to do store images. Please allow this permission in App Settings.", Toast.LENGTH_LONG).show();
+        } else {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
+        }
         ArrayList<String> effectsList = new ArrayList<>();
         effectsList.add("Blur");
         effectsList.add("Closing");
@@ -141,6 +155,7 @@ public class MainActivity extends AppCompatActivity {
                 imageView.setImageBitmap(finalBitmap);
             }
         });
+
     }
 
     private void grayScaleIt(Bitmap bitmap) {
@@ -156,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        this.bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
+        this.bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
 
     }
 
@@ -230,28 +245,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void saveBitmap(String filename) {
-        String extStorageDirectory = getFilesDir().getAbsolutePath();//Environment.getExternalStorageDirectory().toString();
-        OutputStream outStream = null;
-
-        File file = new File(filename + ".png");
-        if (file.exists()) {
-            file.delete();
-            file = new File(extStorageDirectory, filename + ".png");
-            Log.e("file exist", "" + file + ",Bitmap= " + filename);
-        }
-        try {
-            // make a new bitmap from your file
-            Bitmap bitmap = BitmapFactory.decodeFile(file.getName());
-
-            outStream = new FileOutputStream(file);
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outStream);
-            outStream.flush();
-            outStream.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     private void startCamera() {
         new MaterialCamera(this)
@@ -259,24 +252,45 @@ public class MainActivity extends AppCompatActivity {
                 .start(CAMERA_RESPONSE_CODE);
     }
 
-    @OnClick(R.id.saveToIntern)
     public void saveClick() {
-        OutputStream stream = null;
-        try {
-            stream = new FileOutputStream(getFilesDir().getAbsolutePath());
-            stream.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        File file;
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            String fileName = "saved" + new Date().getTime() + ".png";
+            file = new File(Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_PICTURES) + "/", fileName);
+            Log.e(TAG, String.valueOf(Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_PICTURES)) + "/");
+            try {
+                file.createNewFile();
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, bos);
+                byte[] bitmapdata = bos.toByteArray();
+                FileOutputStream fos = new FileOutputStream(file);
+                fos.write(bitmapdata);
+                fos.flush();
+                fos.close();c
+                sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + file.getPath())));
+                if (!file.mkdirs()) {
+                    Log.e(TAG, "File not created");
+                }
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            requestPermission();
         }
-/* Write bitmap to file using JPEG or PNG and 80% quality hint for JPEG. */
-        bitmap.compress(Bitmap.CompressFormat.PNG, 70, stream);
-
-
-        String fileName = "saved" + new Date().getTime();
-        saveBitmap(fileName);
     }
+
+    @OnClick(R.id.saveToIntern)
+    public void saving() {
+        saveClick();
+    }
+
+
 
     @OnClick(R.id.importFromIntent)
     public void importClick() {
@@ -343,6 +357,18 @@ public class MainActivity extends AppCompatActivity {
                             PERMISSION_STORAGE_CODE);
                 }
                 break;
+            case PERMISSION_REQUEST_CODE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.e("value", "Permission Granted, Now you can use local drive .");
+                } else {
+                    Log.e("value", "Permission Denied, You cannot use local drive .");
+                }
+                break;
+
+        }
+        if(grantResults[0]== PackageManager.PERMISSION_GRANTED){
+            Log.v(TAG,"Permission: "+permissions[0]+ "was "+grantResults[0]);
+            //resume tasks needing this permission
         }
     }
 
@@ -350,6 +376,10 @@ public class MainActivity extends AppCompatActivity {
         ActivityCompat.requestPermissions(MainActivity.this,
                 new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
                 PERMISSION_STORAGE_CODE);
+        ActivityCompat.requestPermissions(MainActivity.this,
+                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                PERMISSION_STORAGE_CODE);
+
     }
 
     @Override
