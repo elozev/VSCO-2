@@ -270,7 +270,7 @@ public class MainActivity extends AppCompatActivity {
                 FileOutputStream fos = new FileOutputStream(file);
                 fos.write(bitmapdata);
                 fos.flush();
-                fos.close();c
+                fos.close();
                 sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + file.getPath())));
                 if (!file.mkdirs()) {
                     Log.e(TAG, "File not created");
